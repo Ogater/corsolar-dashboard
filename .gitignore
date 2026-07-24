@@ -1,8 +1,32 @@
+# Dependencies and build output
 node_modules/
 dist/
-.vite-*.log
-.chrome-profile/
+
+# Environment files
 *.local
 .env
 .env.*
 !.env.example
+
+# Logs and test artifacts
+*.log
+.vite-*.log
+.playwright-cli/
+playwright-report/
+test-results/
+coverage/
+output/
+
+# Local deployment data, browser profiles and caches
+.vercel/
+.chrome-profile/
+.vite/
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp

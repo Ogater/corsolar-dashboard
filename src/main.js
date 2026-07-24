@@ -16,8 +16,15 @@ const icons = {
   cloud: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 18h11a4 4 0 0 0 .2-8 6 6 0 0 0-11.3-1.8A4.9 4.9 0 0 0 6.5 18Z"/></svg>`,
 };
 
-const labels = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);
-let cloudIndex = 15;
+const DEMO_POINT_COUNT = 144;
+const PLAYBACK_DURATION_MS = 60_000;
+const labels = Array.from({ length: DEMO_POINT_COUNT }, (_, index) => {
+  const minutes = index * (24 * 60 / DEMO_POINT_COUNT);
+  const hour = Math.floor(minutes / 60);
+  const minute = Math.round(minutes % 60);
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+});
+let cloudIndex = Math.round(13 / 24 * labels.length);
 let totalNominal = stations.reduce((sum, station) => sum + station.nominal, 0);
 
 function clamp(value, min = 0, max = 1) {
@@ -30,27 +37,33 @@ function daylight(hour) {
 }
 
 function cloudLoss(hour, offset = 0) {
-  const morningCloud = 0.28 * Math.exp(-Math.pow(hour - (9 + offset), 2) / 1.5);
-  const mainCloud = 0.73 * Math.exp(-Math.pow(hour - (15 + offset), 2) / 0.75);
-  return clamp(1 - morningCloud - mainCloud, 0.18, 1);
+  if (!apiConfig.cloud) return 1;
+  const [startHour, startMinute] = apiConfig.cloudStartTime.split(':').map(Number);
+  const durationHours = apiConfig.cloudDurationMinutes / 60;
+  const center = startHour + startMinute / 60 + durationHours / 2 + offset;
+  const sigma = Math.max(durationHours / 2.6, 0.07);
+  const cloudShape = Math.exp(-0.5 * Math.pow((hour - center) / sigma, 2));
+  return clamp(1 - (1 - apiConfig.cloudTransmissionFactor) * cloudShape, 0.08, 1);
 }
 
 function createStationHistory(stationIndex) {
   const offset = (stationIndex - 1.5) * 0.12;
   const efficiency = 0.92 + stationIndex * 0.018;
-  return labels.map((_, hour) => {
+  return labels.map((_, index) => {
+    const hour = index * 24 / labels.length;
     const texture = (Math.random() - 0.5) * 0.075;
     return clamp(daylight(hour) * cloudLoss(hour, offset) * efficiency + texture, 0.02, 1);
   });
 }
 
-const histories = stations.map((_, index) => createStationHistory(index));
-const averageHistory = labels.map((_, pointIndex) => (
+let histories = stations.map((_, index) => createStationHistory(index));
+let averageHistory = labels.map((_, pointIndex) => (
   histories.reduce((sum, history) => sum + history[pointIndex], 0) / histories.length
 ));
 
 function buildBatteryCorrection(rawSeries) {
-  const battery = rawSeries.map((raw, hour) => {
+  const battery = rawSeries.map((raw, index) => {
+    const hour = index * 24 / rawSeries.length;
     const desired = daylight(hour) * 0.73;
     return clamp(desired - raw, 0, 0.34);
   });
@@ -58,7 +71,7 @@ function buildBatteryCorrection(rawSeries) {
   return { battery, corrected };
 }
 
-const correction = buildBatteryCorrection(averageHistory);
+let correction = buildBatteryCorrection(averageHistory);
 
 const app = document.querySelector('#app');
 
@@ -91,10 +104,61 @@ app.innerHTML = `
       </div>
     </section>
 
+    <section class="scenario-console" aria-labelledby="scenarioTitle" hidden>
+      <div class="playback-control">
+        <div>
+          <p class="eyebrow">ИНТЕРАКТИВНЫЙ СЦЕНАРИЙ / 24 ЧАСА ЗА 1 МИНУТУ</p>
+          <h2 id="scenarioTitle">Проигрывание суток</h2>
+        </div>
+        <button class="primary-button" id="playbackButton" type="button">
+          <span class="play-icon" aria-hidden="true"></span>
+          <span class="button-label">ПРОИГРАТЬ СУТКИ</span>
+        </button>
+        <div class="playback-timeline">
+          <time id="playbackTime" datetime="00:00">00:00</time>
+          <progress id="playbackProgress" max="100" value="0" aria-label="Прогресс проигрывания суток"></progress>
+          <span>24:00</span>
+        </div>
+      </div>
+
+      <form class="cloud-console" id="cloudForm">
+        <div class="cloud-console-title">
+          <span class="cloud-icon">${icons.cloud}</span>
+          <div>
+            <p class="eyebrow">СЦЕНАРИЙ ПОГОДЫ</p>
+            <h2>Настройка облака</h2>
+          </div>
+          <label class="cloud-toggle">
+            <input id="cloudEnabled" type="checkbox" checked />
+            <span aria-hidden="true"></span>
+            <b>ВКЛ</b>
+          </label>
+        </div>
+        <div class="cloud-fields" id="cloudFields">
+          <label class="cloud-start-field">
+            <span>НАЧАЛО</span>
+            <input id="cloudStart" type="time" value="${apiConfig.cloudStartTime}" required />
+          </label>
+          <label>
+            <span>ДЛИТЕЛЬНОСТЬ</span>
+            <span class="input-with-unit">
+              <input id="cloudDuration" type="number" min="1" max="360" step="1" value="${apiConfig.cloudDurationMinutes}" required />
+              <b>МИН</b>
+            </span>
+          </label>
+          <label class="range-field">
+            <span>СИЛА ПРОСАДКИ <output id="cloudDropOutput">${Math.round((1 - apiConfig.cloudTransmissionFactor) * 100)}%</output></span>
+            <input id="cloudDrop" type="range" min="10" max="90" step="1" value="${Math.round((1 - apiConfig.cloudTransmissionFactor) * 100)}" />
+          </label>
+          <button class="secondary-button" id="applyCloudButton" type="submit">ПРИМЕНИТЬ</button>
+        </div>
+      </form>
+    </section>
+
     <div class="section-label"><span>01</span> ГЕНЕРАЦИЯ ПО ОБЪЕКТАМ</div>
     <section class="station-grid" aria-label="Солнечные электростанции">
       ${stations.map((station) => `
-        <article class="station-card" data-station="${station.id}" style="--station-color: #e5b44e">
+        <article class="station-card" data-station="${station.id}" style="--station-color: #ed1064">
           <div class="station-head">
             <span class="station-icon">${icons.sun}</span>
             <div>
@@ -147,9 +211,9 @@ app.innerHTML = `
             <h2>Генерация с поддержкой батареи</h2>
           </div>
           <div class="legend">
-            <span><i style="--legend-color:#e3604f"></i>ГЕНЕРАЦИЯ</span>
-            <span><i style="--legend-color:#e5b44e"></i>БАТАРЕЯ</span>
-            <span><i style="--legend-color:#f0e6c7"></i>ИТОГ</span>
+            <span><i style="--legend-color:#ed1064"></i>ГЕНЕРАЦИЯ</span>
+            <span><i style="--legend-color:#111111"></i>АКБ</span>
+            <span><i class="is-dashed" style="--legend-color:#111111"></i>КОРРЕКЦИЯ</span>
           </div>
         </div>
         <div class="main-chart-wrap"><canvas id="correctedChart"></canvas></div>
@@ -193,7 +257,7 @@ app.innerHTML = `
 `;
 
 Chart.defaults.font.family = '"Share Tech Mono", "Courier New", monospace';
-Chart.defaults.color = '#7f897c';
+Chart.defaults.color = '#667085';
 
 const cloudBandPlugin = {
   id: 'cloudBand',
@@ -203,33 +267,38 @@ const cloudBandPlugin = {
     if (!chartArea || !scales.x) return;
     const index = options.index ?? cloudIndex;
     const center = scales.x.getPixelForValue(index);
-    const next = scales.x.getPixelForValue(Math.min(index + 1, chart.data.labels.length - 1));
-    const width = Math.max(22, Math.abs(next - center) * 1.7);
+    const labelStep = chart.data.labels.length > 1
+      ? Math.max(1, Math.abs(timeToMinutes(chart.data.labels[1]) - timeToMinutes(chart.data.labels[0])))
+      : 60;
+    const durationInPoints = Math.max(1, (options.durationMinutes || 15) / labelStep);
+    const end = scales.x.getPixelForValue(Math.min(index + durationInPoints, chart.data.labels.length - 1));
+    const width = Math.max(22, Math.abs(end - center));
+    const labelCenter = Math.min(chartArea.right - 28, center + width / 2);
     ctx.save();
-    ctx.fillStyle = options.color || 'rgba(227, 96, 79, 0.075)';
-    ctx.fillRect(center - width / 2, chartArea.top, width, chartArea.bottom - chartArea.top);
-    ctx.strokeStyle = options.stroke || 'rgba(227, 96, 79, 0.42)';
+    ctx.fillStyle = options.color || 'rgba(237, 16, 100, 0.06)';
+    ctx.fillRect(center, chartArea.top, width, chartArea.bottom - chartArea.top);
+    ctx.strokeStyle = options.stroke || 'rgba(211, 19, 90, 0.5)';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(center, chartArea.top);
     ctx.lineTo(center, chartArea.bottom);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = options.textColor || '#c98779';
+    ctx.fillStyle = options.textColor || '#d3135a';
     ctx.font = '9px "Share Tech Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(options.label || 'ТУЧА', center, chartArea.top + 13);
+    ctx.fillText(options.label || 'ТУЧА', labelCenter, chartArea.top + 13);
     ctx.restore();
   },
 };
 
 Chart.register(cloudBandPlugin);
 
-const gridColor = 'rgba(183, 194, 169, 0.1)';
+const gridColor = 'rgba(152, 162, 179, 0.22)';
 const commonScales = {
   x: {
     grid: { color: gridColor, drawTicks: false },
-    border: { color: 'rgba(183, 194, 169, 0.22)' },
+    border: { color: '#d0d5dd' },
     ticks: { maxTicksLimit: 9, padding: 10, font: { size: 9 } },
   },
   y: {
@@ -247,11 +316,11 @@ const commonScales = {
 };
 
 const tooltip = {
-  backgroundColor: '#1b201b',
-  borderColor: '#4b5548',
+  backgroundColor: '#111827',
+  borderColor: '#344054',
   borderWidth: 1,
-  titleColor: '#f0e6c7',
-  bodyColor: '#b7c2a9',
+  titleColor: '#ffffff',
+  bodyColor: '#f2f4f7',
   padding: 11,
   displayColors: true,
   callbacks: { label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toFixed(2)}` },
@@ -263,8 +332,8 @@ const miniCharts = stations.map((station, index) => new Chart(document.querySele
     labels,
     datasets: [{
       data: histories[index],
-      borderColor: '#e3604f',
-      backgroundColor: 'rgba(227, 96, 79, 0.09)',
+      borderColor: '#ed1064',
+      backgroundColor: 'rgba(237, 16, 100, 0.08)',
       fill: true,
       borderWidth: 1.6,
       pointRadius: 0,
@@ -287,10 +356,10 @@ const averageChart = new Chart(document.querySelector('#averageChart'), {
     datasets: [{
       label: 'Генерация',
       data: averageHistory,
-      borderColor: '#e3604f',
-      backgroundColor: 'rgba(227, 96, 79, 0.1)',
+      borderColor: '#ed1064',
+      backgroundColor: 'rgba(237, 16, 100, 0.08)',
       fill: true,
-      borderWidth: 2.2,
+      borderWidth: 3,
       pointRadius: 0,
       tension: 0.25,
     }],
@@ -303,7 +372,12 @@ const averageChart = new Chart(document.querySelector('#averageChart'), {
     plugins: {
       legend: { display: false },
       tooltip,
-      cloudBand: { display: true, index: cloudIndex, label: 'ТУЧА / ПРОСАДКА' },
+      cloudBand: {
+        display: true,
+        index: cloudIndex,
+        durationMinutes: apiConfig.cloudDurationMinutes,
+        label: 'ТУЧА / ПРОСАДКА',
+      },
     },
     scales: commonScales,
   },
@@ -317,29 +391,29 @@ const correctedChart = new Chart(document.querySelector('#correctedChart'), {
       {
         label: 'Генерация',
         data: averageHistory,
-        borderColor: '#e3604f',
+        borderColor: '#ed1064',
         backgroundColor: 'transparent',
-        borderWidth: 1.7,
+        borderWidth: 3,
         pointRadius: 0,
         tension: 0.25,
       },
       {
         label: 'Батарея',
         data: correction.battery,
-        borderColor: '#e5b44e',
-        backgroundColor: 'rgba(229, 180, 78, 0.12)',
+        borderColor: '#111111',
+        backgroundColor: 'rgba(17, 17, 17, 0.07)',
         fill: true,
-        borderWidth: 2,
+        borderWidth: 2.4,
         pointRadius: 0,
         tension: 0.2,
       },
       {
-        label: 'Итог',
+        label: 'Коррекция',
         data: correction.corrected,
-        borderColor: '#f0e6c7',
+        borderColor: '#111111',
         backgroundColor: 'transparent',
-        borderWidth: 2.3,
-        borderDash: [7, 4],
+        borderWidth: 2.4,
+        borderDash: [6, 4],
         pointRadius: 0,
         tension: 0.25,
       },
@@ -356,15 +430,111 @@ const correctedChart = new Chart(document.querySelector('#correctedChart'), {
       cloudBand: {
         display: true,
         index: cloudIndex,
+        durationMinutes: apiConfig.cloudDurationMinutes,
         label: 'АКБ КОМПЕНСИРУЕТ',
-        color: 'rgba(229, 180, 78, 0.065)',
-        stroke: 'rgba(229, 180, 78, 0.42)',
-        textColor: '#d8b96e',
+        color: 'rgba(36, 107, 253, 0.055)',
+        stroke: 'rgba(36, 107, 253, 0.48)',
+        textColor: '#174ea6',
       },
     },
     scales: commonScales,
   },
 });
+
+const playbackCharts = [...miniCharts, averageChart, correctedChart];
+let playbackSources = [];
+let playbackAnimationFrame = null;
+let playbackProgress = 1;
+let playbackStartedAt = 0;
+let playbackRunning = false;
+let cloudScenarioEnabled = apiConfig.cloud;
+
+function syncPlaybackSources() {
+  playbackSources = playbackCharts.map((chart) => ({
+    chart,
+    labels: [...chart.data.labels],
+    datasets: chart.data.datasets.map((dataset) => [...dataset.data]),
+  }));
+}
+
+function setPlaybackButtonState(isPlaying) {
+  const button = document.querySelector('#playbackButton');
+  button.classList.toggle('is-playing', isPlaying);
+  button.setAttribute('aria-label', isPlaying ? 'Перезапустить проигрывание суток' : 'Проиграть сутки за одну минуту');
+  button.querySelector('.button-label').textContent = isPlaying ? 'ПЕРЕЗАПУСТИТЬ' : 'ПРОИГРАТЬ СУТКИ';
+}
+
+function applyPlaybackFrame(progress, force = false) {
+  playbackProgress = clamp(progress);
+
+  playbackSources.forEach(({ chart, labels: sourceLabels, datasets }) => {
+    const revealCount = playbackProgress >= 1
+      ? sourceLabels.length
+      : Math.max(1, Math.ceil(sourceLabels.length * playbackProgress));
+
+    if (force || chart.$revealCount !== revealCount) {
+      chart.data.labels = sourceLabels;
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const source = datasets[datasetIndex] || [];
+        dataset.data = source.map((value, index) => (index < revealCount ? value : null));
+      });
+
+      if (chart.options.plugins.cloudBand) {
+        chart.options.plugins.cloudBand.display = cloudScenarioEnabled && cloudIndex < revealCount;
+      }
+
+      chart.$revealCount = revealCount;
+      chart.update('none');
+    }
+  });
+
+  const timelineSource = playbackSources.find(({ chart }) => chart === averageChart);
+  const labelsForTime = timelineSource?.labels || labels;
+  const timeIndex = Math.min(
+    labelsForTime.length - 1,
+    Math.max(0, Math.floor(playbackProgress * labelsForTime.length)),
+  );
+  const timeLabel = playbackProgress >= 1 ? '24:00' : getTimeLabel(labelsForTime[timeIndex]);
+  const playbackTime = document.querySelector('#playbackTime');
+  playbackTime.textContent = timeLabel;
+  playbackTime.setAttribute('datetime', timeLabel);
+  document.querySelector('#playbackProgress').value = playbackProgress * 100;
+}
+
+function finishPlayback() {
+  playbackRunning = false;
+  playbackAnimationFrame = null;
+  applyPlaybackFrame(1, true);
+  setPlaybackButtonState(false);
+}
+
+function tickPlayback(now) {
+  const progress = (now - playbackStartedAt) / PLAYBACK_DURATION_MS;
+  if (progress >= 1) {
+    finishPlayback();
+    return;
+  }
+
+  applyPlaybackFrame(progress);
+  playbackAnimationFrame = requestAnimationFrame(tickPlayback);
+}
+
+function startPlayback(manual = false) {
+  if (!playbackSources.length) return;
+  if (!manual && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    finishPlayback();
+    return;
+  }
+
+  if (playbackAnimationFrame) cancelAnimationFrame(playbackAnimationFrame);
+  playbackRunning = true;
+  playbackStartedAt = performance.now();
+  applyPlaybackFrame(0, true);
+  setPlaybackButtonState(true);
+  playbackAnimationFrame = requestAnimationFrame(tickPlayback);
+}
+
+syncPlaybackSources();
 
 function formatNumber(value, digits = 0) {
   return value.toLocaleString('ru-RU', { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -400,6 +570,49 @@ function findClosestLabelIndex(chartLabels, time) {
     }
   });
   return bestIndex;
+}
+
+function applyDemoScenario() {
+  histories = stations.map((_, index) => createStationHistory(index));
+  averageHistory = labels.map((_, pointIndex) => (
+    histories.reduce((sum, history) => sum + history[pointIndex], 0) / histories.length
+  ));
+  correction = buildBatteryCorrection(averageHistory);
+  cloudScenarioEnabled = apiConfig.cloud;
+  cloudIndex = findClosestLabelIndex(labels, apiConfig.cloudStartTime);
+
+  miniCharts.forEach((chart, index) => {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = histories[index];
+  });
+  averageChart.data.labels = labels;
+  averageChart.data.datasets[0].data = averageHistory;
+  correctedChart.data.labels = labels;
+  correctedChart.data.datasets[0].data = averageHistory;
+  correctedChart.data.datasets[1].data = correction.battery;
+  correctedChart.data.datasets[2].data = correction.corrected;
+
+  [averageChart, correctedChart].forEach((chart) => {
+    chart.options.plugins.cloudBand.index = cloudIndex;
+    chart.options.plugins.cloudBand.durationMinutes = apiConfig.cloudDurationMinutes;
+    chart.options.plugins.cloudBand.display = apiConfig.cloud;
+  });
+
+  const cloudText = apiConfig.cloud
+    ? `${apiConfig.cloudStartTime} / ${apiConfig.cloudDurationMinutes} МИН`
+    : 'ОБЛАКО ОТКЛЮЧЕНО';
+  const dropPercent = apiConfig.cloud ? Math.round((1 - apiConfig.cloudTransmissionFactor) * 100) : 0;
+  const maxBattery = Math.max(...correction.battery) * totalNominal / 1000;
+  currentApiGridPoint = null;
+  document.querySelector('#cloudLoss').textContent = `−${dropPercent}%`;
+  document.querySelector('#cloudEventLabel').textContent = cloudText;
+  document.querySelector('#weatherStatus').textContent = apiConfig.cloud ? `ОБЛАКО: ${cloudText}` : 'ОБЛАЧНОСТЬ: НЕТ';
+  document.querySelector('#batteryPower').textContent = `+${formatNumber(maxBattery, 2)} МВт`;
+  document.querySelector('#connectionStatus').textContent = 'СЦЕНАРИЙ ПРИМЕНЁН / ОБНОВЛЕНИЕ API';
+
+  syncPlaybackSources();
+  applyPlaybackFrame(playbackProgress, true);
+  renderSummary();
 }
 
 function renderStation(station) {
@@ -495,16 +708,20 @@ function applyApiData(data) {
   correctedChart.data.datasets[2].data = correctedSeries;
 
   const cloudEvent = data.cloud_event || {};
+  cloudScenarioEnabled = data.cloud_enabled !== false;
   cloudIndex = findClosestLabelIndex(apiLabels, cloudEvent.start_time || apiConfig.cloudStartTime);
+  const cloudDuration = numberOr(cloudEvent.duration_minutes, apiConfig.cloudDurationMinutes);
   const cloudText = data.cloud_enabled === false
     ? 'ОБЛАКО ОТКЛЮЧЕНО'
-    : `${getTimeLabel(cloudEvent.start_time || apiConfig.cloudStartTime)} / ${numberOr(cloudEvent.duration_minutes, 15)} МИН`;
+    : `${getTimeLabel(cloudEvent.start_time || apiConfig.cloudStartTime)} / ${cloudDuration} МИН`;
   averageChart.options.plugins.cloudBand.index = cloudIndex;
+  averageChart.options.plugins.cloudBand.durationMinutes = cloudDuration;
   averageChart.options.plugins.cloudBand.label = 'ТУЧА / ПРОСАДКА';
   correctedChart.options.plugins.cloudBand.index = cloudIndex;
+  correctedChart.options.plugins.cloudBand.durationMinutes = cloudDuration;
   correctedChart.options.plugins.cloudBand.label = 'АКБ КОМПЕНСИРУЕТ';
-  averageChart.update('none');
-  correctedChart.update('none');
+  syncPlaybackSources();
+  applyPlaybackFrame(playbackProgress, true);
 
   const maxDropKw = numberOr(
     data.without_battery_summary?.max_drop_kw,
@@ -565,15 +782,58 @@ function updateClock() {
   document.querySelector('#clock').textContent = new Date().toLocaleTimeString('ru-RU');
 }
 
-const deepestLoss = Math.round((1 - averageHistory[cloudIndex] / daylight(cloudIndex)) * 100);
-document.querySelector('#cloudLoss').textContent = `−${deepestLoss}%`;
-const maxBattery = Math.max(...correction.battery) * totalNominal / 1000;
-document.querySelector('#batteryPower').textContent = `+${maxBattery.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} МВт`;
+const cloudForm = document.querySelector('#cloudForm');
+const cloudEnabledInput = document.querySelector('#cloudEnabled');
+const cloudFields = document.querySelector('#cloudFields');
+const cloudStartInput = document.querySelector('#cloudStart');
+const cloudDurationInput = document.querySelector('#cloudDuration');
+const cloudDropInput = document.querySelector('#cloudDrop');
+const cloudDropOutput = document.querySelector('#cloudDropOutput');
+const applyCloudButton = document.querySelector('#applyCloudButton');
+
+function updateCloudControlsState() {
+  const enabled = cloudEnabledInput.checked;
+  cloudFields.classList.toggle('is-disabled', !enabled);
+  cloudEnabledInput.parentElement.querySelector('b').textContent = enabled ? 'ВКЛ' : 'ВЫКЛ';
+  [cloudStartInput, cloudDurationInput, cloudDropInput].forEach((input) => {
+    input.disabled = !enabled;
+  });
+}
+
+cloudEnabledInput.addEventListener('change', updateCloudControlsState);
+cloudDropInput.addEventListener('input', () => {
+  cloudDropOutput.textContent = `${cloudDropInput.value}%`;
+});
+document.querySelector('#playbackButton').addEventListener('click', () => startPlayback(true));
+
+cloudForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  apiConfig.cloud = cloudEnabledInput.checked;
+  apiConfig.cloudStartTime = cloudStartInput.value || '13:00';
+  apiConfig.cloudDurationMinutes = clamp(numberOr(cloudDurationInput.value, 15), 1, 360);
+  apiConfig.cloudTransmissionFactor = clamp(1 - numberOr(cloudDropInput.value, 52) / 100, 0.1, 0.9);
+  cloudDurationInput.value = apiConfig.cloudDurationMinutes;
+
+  applyCloudButton.disabled = true;
+  applyCloudButton.textContent = 'ПРИМЕНЯЕМ…';
+  applyDemoScenario();
+  startPlayback(true);
+
+  try {
+    await refreshApi();
+  } finally {
+    applyCloudButton.disabled = false;
+    applyCloudButton.textContent = 'ПРИМЕНИТЬ';
+  }
+});
+
+updateCloudControlsState();
 document.querySelector('#batteryFill').style.height = '68%';
 
 stations.forEach(renderStation);
-renderSummary();
+applyDemoScenario();
 updateClock();
 setInterval(updateClock, 1000);
+startPlayback();
 refreshApi();
 setInterval(refreshApi, apiConfig.pollIntervalMs);
