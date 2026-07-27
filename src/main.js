@@ -31,6 +31,25 @@ function clamp(value, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
+function smoothSeries(values) {
+  if (values.length < 5) return [...values];
+  const radius = Math.max(2, Math.min(6, Math.round(values.length / 72)));
+
+  return values.map((_, index) => {
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (let offset = -radius; offset <= radius; offset += 1) {
+      const sourceIndex = Math.max(0, Math.min(values.length - 1, index + offset));
+      const weight = radius + 1 - Math.abs(offset);
+      weightedSum += values[sourceIndex] * weight;
+      totalWeight += weight;
+    }
+
+    return clamp(weightedSum / totalWeight);
+  });
+}
+
 function daylight(hour) {
   if (hour < 5 || hour > 21) return 0.025;
   return Math.max(0.04, Math.sin(((hour - 5) / 16) * Math.PI));
@@ -208,12 +227,12 @@ app.innerHTML = `
         <div class="panel-head">
           <div>
             <p class="eyebrow">АКБ КОМПЕНСИРУЕТ ПАДЕНИЕ ГЕНЕРАЦИИ</p>
-            <h2>Генерация с поддержкой батареи</h2>
+            <h2>Суммарная генерация с поддержкой батареи</h2>
           </div>
           <div class="legend">
             <span><i style="--legend-color:#ed1064"></i>ГЕНЕРАЦИЯ</span>
-            <span><i style="--legend-color:#111111"></i>АКБ</span>
-            <span><i class="is-dashed" style="--legend-color:#111111"></i>КОРРЕКЦИЯ</span>
+            <span><i class="is-dotted" style="--legend-color:#111111"></i>АКБ</span>
+            <span><i style="--legend-color:#111111"></i>ИТОГ С АКБ</span>
           </div>
         </div>
         <div class="main-chart-wrap"><canvas id="correctedChart"></canvas></div>
@@ -337,7 +356,10 @@ const miniCharts = stations.map((station, index) => new Chart(document.querySele
       fill: true,
       borderWidth: 1.6,
       pointRadius: 0,
-      tension: 0.26,
+      tension: 0.42,
+      cubicInterpolationMode: 'monotone',
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
     }],
   },
   options: {
@@ -361,7 +383,10 @@ const averageChart = new Chart(document.querySelector('#averageChart'), {
       fill: true,
       borderWidth: 3,
       pointRadius: 0,
-      tension: 0.25,
+      tension: 0.42,
+      cubicInterpolationMode: 'monotone',
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
     }],
   },
   options: {
@@ -395,7 +420,10 @@ const correctedChart = new Chart(document.querySelector('#correctedChart'), {
         backgroundColor: 'transparent',
         borderWidth: 3,
         pointRadius: 0,
-        tension: 0.25,
+        tension: 0.42,
+        cubicInterpolationMode: 'monotone',
+        borderCapStyle: 'round',
+        borderJoinStyle: 'round',
       },
       {
         label: 'Батарея',
@@ -403,19 +431,20 @@ const correctedChart = new Chart(document.querySelector('#correctedChart'), {
         borderColor: '#111111',
         backgroundColor: 'rgba(17, 17, 17, 0.07)',
         fill: true,
-        borderWidth: 2.4,
+        borderWidth: 1.8,
+        borderDash: [2, 4],
         pointRadius: 0,
         tension: 0.2,
       },
       {
-        label: 'Коррекция',
-        data: correction.corrected,
+        label: 'Итог с АКБ',
+        data: smoothSeries(correction.corrected),
         borderColor: '#111111',
         backgroundColor: 'transparent',
-        borderWidth: 2.4,
-        borderDash: [6, 4],
+        borderWidth: 2.8,
         pointRadius: 0,
-        tension: 0.25,
+        tension: 0.42,
+        cubicInterpolationMode: 'monotone',
       },
     ],
   },
@@ -590,7 +619,7 @@ function applyDemoScenario() {
   correctedChart.data.labels = labels;
   correctedChart.data.datasets[0].data = averageHistory;
   correctedChart.data.datasets[1].data = correction.battery;
-  correctedChart.data.datasets[2].data = correction.corrected;
+  correctedChart.data.datasets[2].data = smoothSeries(correction.corrected);
 
   [averageChart, correctedChart].forEach((chart) => {
     chart.options.plugins.cloudBand.index = cloudIndex;
@@ -696,8 +725,8 @@ function applyApiData(data) {
   const batterySeries = sampledRows.map((row) => clamp(
     numberOr(row.battery_output_kw) / Math.max(1, totalNominal),
   ));
-  const correctedSeries = sampledRows.map((row) => clamp(
-    numberOr(row.with_battery_total_output_kw) / Math.max(1, totalNominal),
+  const summedSeries = rawSeries.map((generation, index) => (
+    clamp(generation + batterySeries[index])
   ));
 
   averageChart.data.labels = apiLabels;
@@ -705,7 +734,7 @@ function applyApiData(data) {
   correctedChart.data.labels = apiLabels;
   correctedChart.data.datasets[0].data = rawSeries;
   correctedChart.data.datasets[1].data = batterySeries;
-  correctedChart.data.datasets[2].data = correctedSeries;
+  correctedChart.data.datasets[2].data = smoothSeries(summedSeries);
 
   const cloudEvent = data.cloud_event || {};
   cloudScenarioEnabled = data.cloud_enabled !== false;

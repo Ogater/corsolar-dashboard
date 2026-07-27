@@ -787,7 +787,7 @@ h1 {
 
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: 1fr;
 }
 
 .average-panel {
@@ -852,7 +852,7 @@ h1 {
 
 .chart-panel {
   min-width: 0;
-  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .panel-head {
@@ -898,6 +898,15 @@ h1 {
   );
 }
 
+.legend i.is-dotted {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--legend-color) 0 2px,
+    transparent 2px 5px
+  );
+}
+
 .main-chart-wrap {
   height: 312px;
   padding: 18px 20px 16px 13px;
@@ -905,8 +914,18 @@ h1 {
 
 .storage-panel {
   position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   overflow: hidden;
   transition: background-color .3s ease;
+}
+
+.storage-panel .panel-head {
+  grid-column: 1 / -1;
+}
+
+.storage-panel .battery-visual {
+  grid-row: 2 / 5;
 }
 
 .storage-panel::after {
