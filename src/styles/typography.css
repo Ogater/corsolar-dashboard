@@ -1,0 +1,67 @@
+.weather-state,
+.eyebrow,
+.master-output em,
+.section-label,
+.station-code,
+.station-state,
+.dial-inner span,
+.power-reading > span,
+.nominal-row,
+.station-card footer,
+.chart-facts,
+.legend,
+.storage-state,
+.storage-panel > p,
+.metric-list div,
+.footerbar {
+  color: var(--text-secondary);
+}
+
+.station-head h2,
+.panel-head h2,
+.nominal-row b,
+.metric-list b,
+.footerbar b {
+  color: var(--text-primary);
+}
+
+.power-reading > strong small {
+  color: var(--cor-brand-dark);
+}
+
+.station-head,
+.panel-head {
+  border-bottom-color: var(--border);
+}
+
+.nominal-row,
+.station-card footer,
+.storage-state,
+.metric-list,
+.metric-list div {
+  border-color: var(--border);
+}
+
+.chart-facts > b {
+  color: var(--cor-brand-dark);
+  border-color: color-mix(in srgb, var(--cor-brand) 32%, white);
+  background: var(--cor-brand-soft);
+}
+
+.storage-panel::after {
+  border-color: rgba(36, 107, 253, .12);
+  box-shadow: 0 0 0 28px rgba(36, 107, 253, .045), 0 0 0 56px rgba(36, 107, 253, .025);
+}
+
+.battery-online,
+.metric-list .status-active,
+.storage-state b {
+  color: #174ea6;
+}
+
+.live-dot,
+.footerbar i,
+.battery-online i {
+  background: var(--cor-blue);
+  box-shadow: 0 0 9px rgba(36, 107, 253, .35);
+}

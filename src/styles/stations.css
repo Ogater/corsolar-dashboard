@@ -1,0 +1,217 @@
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 17px;
+  color: #657061;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .14em;
+}
+
+.section-label span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 18px;
+  color: var(--cor-brand-dark);
+  border: 1px solid color-mix(in srgb, var(--cor-brand) 38%, white);
+}
+
+.station-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.station-card {
+  min-width: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.82), transparent 65%), var(--panel);
+  border-right: 1px solid var(--line);
+  transition: background-color .2s ease, transform .2s ease;
+}
+
+.station-card:last-child {
+  border-right: 0;
+}
+
+.station-card:hover {
+  background-color: var(--cor-brand-soft);
+}
+
+.station-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(90, 100, 88, .32);
+}
+
+.station-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--station-color);
+  border: 1px solid color-mix(in srgb, var(--station-color) 50%, transparent);
+  background: color-mix(in srgb, var(--station-color) 7%, transparent);
+}
+
+.station-icon svg {
+  width: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.station-code {
+  color: #818a7d;
+  font: 9px 'Share Tech Mono', monospace;
+  letter-spacing: .12em;
+}
+
+.station-head h2,
+.panel-head h2 {
+  margin: 1px 0 0;
+  color: var(--paper);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.station-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7d8976;
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.station-state i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--station-color);
+}
+
+.station-reading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 18px 15px;
+}
+
+.dial {
+  --value: 50;
+  position: relative;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: conic-gradient(var(--station-color) calc(var(--value) * 1%), var(--border) 0);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--station-color) 9%, transparent);
+}
+
+.dial::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--panel-deep);
+}
+
+.dial::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from -1deg, transparent 0 7deg, var(--bg-card) 7deg 9deg);
+  -webkit-mask: radial-gradient(transparent 61%, #000 62% 68%, transparent 69%);
+  mask: radial-gradient(transparent 61%, #000 62% 68%, transparent 69%);
+}
+
+.dial-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.dial-inner strong {
+  color: var(--station-color);
+  font: 24px/1 'Share Tech Mono', monospace;
+}
+
+.dial-inner span,
+.power-reading > span {
+  margin-top: 4px;
+  color: #697265;
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .12em;
+}
+
+.power-reading {
+  min-width: 0;
+  flex: 1;
+}
+
+.power-reading > strong {
+  display: block;
+  margin: 4px 0 12px;
+  overflow: hidden;
+  color: var(--red);
+  font: 27px/1 'Share Tech Mono', monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.power-reading > strong small {
+  color: #a65a4d;
+  font-size: 11px;
+}
+
+.nominal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed #333a33;
+  color: #697265;
+  font: 8px 'Share Tech Mono', monospace;
+}
+
+.nominal-row b {
+  color: #a4ad9e;
+  font-weight: 400;
+}
+
+.mini-chart-wrap {
+  height: 58px;
+  padding: 0 14px;
+}
+
+.station-card footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px 11px;
+  color: #5e675c;
+  border-top: 1px solid rgba(90, 100, 88, .24);
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.signal b {
+  margin-left: 3px;
+  color: var(--station-color);
+  letter-spacing: 0;
+}

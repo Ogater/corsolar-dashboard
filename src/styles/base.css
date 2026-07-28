@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Share+Tech+Mono&display=swap');
+
+:root {
+  color-scheme: light;
+  font-family: 'Oswald', 'Arial Narrow', sans-serif;
+  color: #111827;
+  background: #ffffff;
+  font-synthesis: none;
+  --bg-page: #ffffff;
+  --bg-card: #f7f8fa;
+  --border: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #667085;
+  --cor-brand: #ed1064;
+  --cor-brand-dark: #d3135a;
+  --cor-brand-soft: #fff0f5;
+  --cor-blue: #246bfd;
+  --cor-blue-soft: #eef4ff;
+  --generation: #ed1064;
+  --correction: #111111;
+  --paper: var(--text-primary);
+  --muted: var(--text-secondary);
+  --dim: #98a2b3;
+  --line: var(--border);
+  --panel: var(--bg-card);
+  --panel-deep: #ffffff;
+  --red: var(--cor-brand);
+  --green: var(--cor-blue);
+  --amber: var(--cor-blue);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+button,
+input,
+progress {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}

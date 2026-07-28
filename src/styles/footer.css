@@ -1,0 +1,23 @@
+.footerbar {
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 0 20px;
+  color: #586057;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.footerbar span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.footerbar b {
+  color: #838c7f;
+  font-weight: 400;
+}
+
+/* COR-Medical light theme: dark text, restrained surfaces, high-contrast data. */

@@ -1,0 +1,13 @@
+/* Точка входа стилей: порядок важен — базовые переменные, затем блоки,
+   типографика поверх них и адаптив в самом конце. */
+
+@import './base.css';
+@import './layout.css';
+@import './hero.css';
+@import './scenario.css';
+@import './stations.css';
+@import './charts.css';
+@import './storage.css';
+@import './footer.css';
+@import './typography.css';
+@import './responsive.css';
