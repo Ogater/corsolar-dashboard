@@ -93,7 +93,56 @@ function renderScenarioConsole() {
           <button class="secondary-button" id="applyCloudButton" type="submit">ПРИМЕНИТЬ</button>
         </div>
       </form>
+
+      ${renderBatteryConsole()}
     </section>
+  `;
+}
+
+function renderBatteryConsole() {
+  return `
+    <form class="battery-console" id="batteryForm">
+      <div class="cloud-console-title">
+        <span class="cloud-icon battery-icon">${icons.battery}</span>
+        <div>
+          <p class="eyebrow">ПАРАМЕТРЫ НАКОПИТЕЛЯ</p>
+          <h2>Настройка АКБ</h2>
+        </div>
+      </div>
+      <div class="battery-fields">
+        <label>
+          <span>ЁМКОСТЬ</span>
+          <span class="input-with-unit">
+            <input id="batteryCapacity" type="number" min="0" max="100000" step="10" value="${apiConfig.batteryCapacityKwh}" />
+            <b>кВт·ч</b>
+          </span>
+        </label>
+        <label>
+          <span>МАКС. РАЗРЯД</span>
+          <span class="input-with-unit">
+            <input id="batteryDischarge" type="number" min="0" max="10000" step="5" value="${apiConfig.maxDischargePowerKw}" />
+            <b>кВт</b>
+          </span>
+        </label>
+        <label>
+          <span>МАКС. ЗАРЯД</span>
+          <span class="input-with-unit">
+            <input id="batteryCharge" type="number" min="0" max="10000" step="5" value="${apiConfig.maxChargePowerKw}" />
+            <b>кВт</b>
+          </span>
+        </label>
+        <label class="range-field">
+          <span>НАЧАЛЬНЫЙ ЗАРЯД <output id="batterySocOutput">${apiConfig.initialSocPercent}%</output></span>
+          <input id="batterySoc" type="range" min="0" max="100" step="1" value="${apiConfig.initialSocPercent}" />
+        </label>
+        <label class="range-field">
+          <span>МИН. РАЗРЯД <output id="batteryMinSocOutput">${apiConfig.minSocPercent}%</output></span>
+          <input id="batteryMinSoc" type="range" min="0" max="100" step="1" value="${apiConfig.minSocPercent}" />
+        </label>
+        <button class="secondary-button" id="applyBatteryButton" type="submit">ПРИМЕНИТЬ</button>
+      </div>
+      <p class="battery-hint" id="batteryHint">Резерв: <b>0</b> кВт·ч доступно до нижнего порога</p>
+    </form>
   `;
 }
 

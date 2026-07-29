@@ -1,6 +1,6 @@
 .scenario-console {
   display: grid;
-  grid-template-columns: minmax(0, .9fr) minmax(560px, 1.1fr);
+  grid-template-columns: minmax(0, .78fr) minmax(420px, 1fr) minmax(330px, .82fr);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, .96);
@@ -11,7 +11,8 @@
 }
 
 .playback-control,
-.cloud-console {
+.cloud-console,
+.battery-console {
   min-width: 0;
   padding: 20px 24px;
 }
@@ -25,7 +26,8 @@
 }
 
 .playback-control h2,
-.cloud-console h2 {
+.cloud-console h2,
+.battery-console h2 {
   margin: 0;
   color: var(--text-primary);
   font-size: 20px;
@@ -35,7 +37,8 @@
 }
 
 .playback-control .eyebrow,
-.cloud-console .eyebrow {
+.cloud-console .eyebrow,
+.battery-console .eyebrow {
   margin-bottom: 4px;
 }
 
@@ -127,6 +130,7 @@
 
 .cloud-console {
   display: grid;
+  align-content: start;
   gap: 16px;
   background: var(--cor-blue-soft);
 }
@@ -286,4 +290,95 @@
   opacity: .6;
   cursor: wait;
   transform: none;
+}
+
+.battery-console {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  border-left: 1px solid var(--border);
+  background: rgba(237, 16, 100, .045);
+}
+
+.battery-console .cloud-console-title {
+  grid-template-columns: auto 1fr;
+}
+
+.battery-icon {
+  color: var(--cor-brand);
+  border-color: rgba(237, 16, 100, .3);
+}
+
+/* Числовые поля идут одним рядом, ползунки SOC — во всю ширину колонки. */
+.battery-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.battery-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font: 8px 'Share Tech Mono', monospace;
+  letter-spacing: .08em;
+}
+
+.battery-fields .range-field {
+  grid-column: 1 / -1;
+}
+
+.battery-fields input[type='number'] {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  color: var(--text-primary);
+  border: 1px solid #d0d5dd;
+  border-radius: 0;
+  background: #ffffff;
+  font: 12px 'Share Tech Mono', monospace;
+}
+
+/* В узкой колонке три поля в ряд — единицам нужен свой зазор,
+   иначе «кВт·ч» наезжает на четырёхзначную ёмкость. */
+.battery-fields .input-with-unit input {
+  padding-right: 34px !important;
+}
+
+.battery-fields .input-with-unit b {
+  right: 7px;
+  font-size: 7px;
+}
+
+.battery-fields input[type='range'] {
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  accent-color: var(--cor-brand);
+}
+
+.battery-fields .range-field output {
+  color: var(--cor-brand-dark);
+}
+
+.battery-fields .secondary-button {
+  grid-column: 1 / -1;
+  color: var(--cor-brand-dark);
+  border-color: rgba(237, 16, 100, .38);
+}
+
+.battery-fields .secondary-button:hover {
+  background: #fff5f9;
+}
+
+.battery-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 9px 'Share Tech Mono', monospace;
+  letter-spacing: .06em;
+}
+
+.battery-hint b {
+  color: var(--cor-brand-dark);
 }

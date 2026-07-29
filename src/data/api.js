@@ -10,6 +10,11 @@ function getApiUrl() {
   url.searchParams.set('cloud_start_time', apiConfig.cloudStartTime);
   url.searchParams.set('cloud_duration_minutes', String(apiConfig.cloudDurationMinutes));
   url.searchParams.set('cloud_transmission_factor', String(apiConfig.cloudTransmissionFactor));
+  url.searchParams.set('battery_capacity_kwh', String(apiConfig.batteryCapacityKwh));
+  url.searchParams.set('initial_soc_percent', String(apiConfig.initialSocPercent));
+  url.searchParams.set('min_soc_percent', String(apiConfig.minSocPercent));
+  url.searchParams.set('max_discharge_power_kw', String(apiConfig.maxDischargePowerKw));
+  url.searchParams.set('max_charge_power_kw', String(apiConfig.maxChargePowerKw));
   return url;
 }
 

@@ -13,6 +13,7 @@ import {
   createMiniCharts,
 } from './charts/createCharts.js';
 import { createPlayback } from './charts/playback.js';
+import { initBatteryControls } from './ui/batteryControls.js';
 import { initCloudControls } from './ui/cloudControls.js';
 import {
   bindDashboard,
@@ -199,6 +200,15 @@ export function startApp(root) {
     onApply: async () => {
       applyDemoScenario();
       startPlayback(true);
+      await refreshApi();
+    },
+  });
+  initBatteryControls({
+    onApply: async () => {
+      // Демо-сценарий не моделирует параметры АКБ — их считает только
+      // бэкенд, поэтому здесь идём сразу за свежим ответом API.
+      setBattery({ capacityMwh: apiConfig.batteryCapacityKwh / 1000 });
+      setConnectionStatus('ПАРАМЕТРЫ АКБ ПРИМЕНЕНЫ / ЗАПРОС API…');
       await refreshApi();
     },
   });

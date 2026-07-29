@@ -55,7 +55,9 @@ export function setCloudInfo({ label, dropPercent, weather }) {
 }
 
 export function setBattery({ powerMw, chargePercent, capacityMwh }) {
-  refs.batteryPower.textContent = `+${formatFactor(powerMw)} МВт`;
+  if (powerMw !== undefined) {
+    refs.batteryPower.textContent = `+${formatFactor(powerMw)} МВт`;
+  }
 
   if (chargePercent !== undefined) {
     const rounded = Math.round(chargePercent);
