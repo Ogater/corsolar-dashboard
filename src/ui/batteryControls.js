@@ -52,7 +52,7 @@ export function initBatteryControls({ onApply }) {
       input.value.trim() === '' ? fallback : numberOr(input.value, fallback)
     );
 
-    apiConfig.batteryCapacityKwh = Math.max(1, readField(capacity, apiConfig.batteryCapacityKwh));
+    apiConfig.batteryCapacityKwh = Math.max(0, readField(capacity, apiConfig.batteryCapacityKwh));
     apiConfig.maxDischargePowerKw = Math.max(0, readField(discharge, apiConfig.maxDischargePowerKw));
     apiConfig.maxChargePowerKw = Math.max(0, readField(charge, apiConfig.maxChargePowerKw));
     apiConfig.initialSocPercent = clamp(numberOr(soc.value, 100), 0, 100);

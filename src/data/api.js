@@ -22,7 +22,6 @@ function assertCompareResponse(data) {
   if (!data || typeof data !== 'object') throw new Error('API вернул пустой ответ');
   if (!Array.isArray(data.objects)) throw new Error('В ответе отсутствует objects');
   if (!Array.isArray(data.object_generation_timelines)) throw new Error('В ответе отсутствует object_generation_timelines');
-  if (!Array.isArray(data.grid_timeline)) throw new Error('В ответе отсутствует grid_timeline');
   return data;
 }
 

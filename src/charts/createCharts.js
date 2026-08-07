@@ -1,11 +1,10 @@
-// Создание трёх типов графиков: мини-спарклайны, средняя генерация, итог с АКБ.
+// Создание трёх типов графиков: объектные спарклайны и две суммарные серии в кВт.
 
 import { apiConfig } from '../core/config.js';
 import { thinSeries } from '../data/series.js';
 import { stations } from '../data/stations.js';
 import {
   Chart,
-  batteryLine,
   commonScales,
   correctionLine,
   generationLine,
@@ -13,7 +12,7 @@ import {
   tooltip,
 } from './chartSetup.js';
 
-export function createMiniCharts(labels, histories) {
+export function createMiniCharts(labels, histories, correctedHistories) {
   return stations.map((station, index) => {
     const thinned = thinSeries(histories[index], apiConfig.maxMiniChartPoints);
 
@@ -21,24 +20,35 @@ export function createMiniCharts(labels, histories) {
       type: 'line',
       data: {
         labels: thinned.indices.map((pointIndex) => labels[pointIndex]),
-        datasets: [generationLine({ data: thinned.values, fill: true, borderWidth: 1.6 })],
+        datasets: [
+          generationLine({
+            data: thinned.values,
+            fill: false,
+            backgroundColor: 'transparent',
+            borderWidth: 1.4,
+          }),
+          correctionLine({
+            data: thinned.indices.map((pointIndex) => correctedHistories[index][pointIndex]),
+            borderWidth: 1.6,
+          }),
+        ],
       },
       options: {
         ...responsiveBase,
         interaction: { intersect: false, mode: 'nearest' },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { display: false }, y: { display: false, min: 0, max: 1 } },
+        scales: { x: { display: false }, y: { display: false, min: 0 } },
       },
     });
   });
 }
 
-export function createAverageChart(labels, averageHistory, cloudIndex) {
+export function createAverageChart(labels, totalGeneration, cloudIndex) {
   return new Chart(document.querySelector('#averageChart'), {
     type: 'line',
     data: {
       labels,
-      datasets: [generationLine({ data: averageHistory, fill: true })],
+      datasets: [generationLine({ data: totalGeneration, fill: true })],
     },
     options: {
       ...responsiveBase,
@@ -57,7 +67,7 @@ export function createAverageChart(labels, averageHistory, cloudIndex) {
   });
 }
 
-export function createCorrectedChart(labels, averageHistory, correction, cloudIndex) {
+export function createCorrectedChart(labels, totalGeneration, correction, cloudIndex) {
   return new Chart(document.querySelector('#correctedChart'), {
     type: 'line',
     data: {
@@ -65,8 +75,7 @@ export function createCorrectedChart(labels, averageHistory, correction, cloudIn
       datasets: [
         // Тоньше верхнего графика: чёрная итоговая линия идёт поверх красной,
         // и при равной толщине они спорят за внимание.
-        generationLine({ data: averageHistory, backgroundColor: 'transparent', borderWidth: 1.8 }),
-        batteryLine({ data: correction.battery }),
+        generationLine({ data: totalGeneration, backgroundColor: 'transparent', borderWidth: 1.8 }),
         correctionLine({ data: correction.corrected }),
       ],
     },

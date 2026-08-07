@@ -18,14 +18,13 @@ export const commonScales = {
   },
   y: {
     min: 0,
-    max: 1,
+    beginAtZero: true,
     grid: { color: palette.axis, drawTicks: false },
     border: { display: false },
     ticks: {
-      stepSize: 0.25,
       padding: 10,
       font: { size: 9 },
-      callback: (value) => Number(value).toFixed(2),
+      callback: (value) => `${Number(value).toLocaleString('ru-RU')} кВт`,
     },
   },
 };
@@ -38,7 +37,13 @@ export const tooltip = {
   bodyColor: '#f2f4f7',
   padding: 11,
   displayColors: true,
-  callbacks: { label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toFixed(2)}` },
+  callbacks: {
+    label: (context) => (
+      ` ${context.dataset.label}: ${Number(context.parsed.y).toLocaleString('ru-RU', {
+        maximumFractionDigits: 1,
+      })} кВт`
+    ),
+  },
 };
 
 // Плотная сетка точек делает радиус 0 обязательным, иначе Chart.js
@@ -57,7 +62,7 @@ const lineBase = {
 export function generationLine(overrides = {}) {
   return {
     ...lineBase,
-    label: 'Генерация',
+    label: 'Без коррекции',
     borderColor: palette.generation,
     backgroundColor: palette.generationFill,
     borderWidth: 3,
@@ -68,25 +73,10 @@ export function generationLine(overrides = {}) {
 export function correctionLine(overrides = {}) {
   return {
     ...lineBase,
-    label: 'Итог с АКБ',
+    label: 'С коррекцией',
     borderColor: palette.correction,
     backgroundColor: 'transparent',
     borderWidth: 2.8,
-    ...overrides,
-  };
-}
-
-export function batteryLine(overrides = {}) {
-  return {
-    ...lineBase,
-    label: 'Батарея',
-    borderColor: palette.correction,
-    backgroundColor: palette.correctionFill,
-    fill: true,
-    borderWidth: 1.8,
-    borderDash: [2, 4],
-    tension: 0.2,
-    cubicInterpolationMode: undefined,
     ...overrides,
   };
 }

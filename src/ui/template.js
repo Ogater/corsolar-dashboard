@@ -32,9 +32,9 @@ function renderHero() {
         <p class="subtitle">Четыре солнечные электростанции · генерация, просадки и компенсация АКБ</p>
       </div>
       <div class="master-output">
-        <span>СРЕДНЯЯ ПРОИЗВОДИТЕЛЬНОСТЬ</span>
-        <strong id="averageOutput">0,00 <small>/ 1,00</small></strong>
-        <em id="totalOutput">0,00 МВт суммарно</em>
+        <span>СУММАРНАЯ ГЕНЕРАЦИЯ</span>
+        <strong id="averageOutput">0 <small>кВт</small></strong>
+        <em id="totalOutput">установленная мощность: 0 кВт</em>
       </div>
     </section>
   `;
@@ -44,15 +44,15 @@ function renderScenarioConsole() {
   const dropPercent = Math.round((1 - apiConfig.cloudTransmissionFactor) * 100);
 
   return `
-    <section class="scenario-console" aria-labelledby="scenarioTitle" hidden>
+    <section class="scenario-console" aria-labelledby="scenarioTitle">
       <div class="playback-control">
         <div>
-          <p class="eyebrow">ИНТЕРАКТИВНЫЙ СЦЕНАРИЙ / 24 ЧАСА ЗА 1 МИНУТУ</p>
-          <h2 id="scenarioTitle">Проигрывание суток</h2>
+          <p class="eyebrow">ПАНЕЛЬ УПРАВЛЕНИЯ / ДАННЫЕ API</p>
+          <h2 id="scenarioTitle">Обновление графиков</h2>
         </div>
         <button class="primary-button" id="playbackButton" type="button">
-          <span class="play-icon" aria-hidden="true"></span>
-          <span class="button-label">ПРОИГРАТЬ СУТКИ</span>
+          <span class="reload-icon" aria-hidden="true">↻</span>
+          <span class="button-label">ПЕРЕЗАГРУЗИТЬ ГРАФИК</span>
         </button>
         <div class="playback-timeline">
           <time id="playbackTime" datetime="00:00">00:00</time>
@@ -172,6 +172,10 @@ function renderStationCard(station) {
           <div class="nominal-row"><span>НОМИНАЛ</span><b class="nominal-value">${station.nominal.toLocaleString('ru-RU')} кВт</b></div>
         </div>
       </div>
+      <div class="mini-chart-legend" aria-hidden="true">
+        <span><i class="is-raw"></i> БЕЗ КОРРЕКЦИИ</span>
+        <span><i class="is-corrected"></i> С КОРРЕКЦИЕЙ</span>
+      </div>
       <div class="mini-chart-wrap"><canvas id="mini-${station.id}"></canvas></div>
       <footer><span class="station-place">${station.place}</span><span class="signal">СИГНАЛ <b>•••</b></span></footer>
     </article>
@@ -189,15 +193,15 @@ function renderStationGrid() {
 
 function renderAveragePanel() {
   return `
-    <div class="section-label"><span>02</span> СРЕДНЕЕ ПО ЧЕТЫРЁМ СТАНЦИЯМ / БЕЗ КОРРЕКЦИИ</div>
+    <div class="section-label"><span>02</span> СУММА ПО ЧЕТЫРЁМ ОБЪЕКТАМ / БЕЗ КОРРЕКЦИИ</div>
     <section class="panel average-panel">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">ИСХОДНАЯ ГЕНЕРАЦИЯ / 0–1</p>
-          <h2>Средняя производительность</h2>
+          <p class="eyebrow">ИСХОДНАЯ ГЕНЕРАЦИЯ / МОЩНОСТЬ, кВт</p>
+          <h2>Суммарная генерация объектов</h2>
         </div>
         <div class="chart-facts">
-          <span><i class="red-key"></i> ГЕНЕРАЦИЯ</span>
+          <span><i class="red-key"></i> БЕЗ КОРРЕКЦИИ</span>
           <span>${icons.cloud} <b class="cloud-label" id="cloudEventLabel">ТУЧА = ПРОСАДКА</b></span>
           <b id="cloudLoss">−72%</b>
         </div>
@@ -214,13 +218,12 @@ function renderCorrectionSection() {
       <article class="panel chart-panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">АКБ КОМПЕНСИРУЕТ ПАДЕНИЕ ГЕНЕРАЦИИ</p>
-            <h2>Суммарная генерация с поддержкой батареи</h2>
+            <p class="eyebrow">СУММА ПО ОБЪЕКТАМ / МОЩНОСТЬ, кВт</p>
+            <h2>Суммарная генерация с коррекцией и без</h2>
           </div>
           <div class="legend">
-            <span><i style="--legend-color:#ed1064"></i>ГЕНЕРАЦИЯ</span>
-            <span><i class="is-dotted" style="--legend-color:#111111"></i>АКБ</span>
-            <span><i style="--legend-color:#111111"></i>ИТОГ С АКБ</span>
+            <span><i style="--legend-color:#ed1064"></i>БЕЗ КОРРЕКЦИИ</span>
+            <span><i style="--legend-color:#111111"></i>С КОРРЕКЦИЕЙ</span>
           </div>
         </div>
         <div class="main-chart-wrap"><canvas id="correctedChart"></canvas></div>

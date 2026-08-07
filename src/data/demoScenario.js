@@ -42,21 +42,36 @@ function createStationHistory(stationIndex, labels) {
   });
 }
 
-export function buildBatteryCorrection(rawSeries) {
+export function buildBatteryCorrection(rawSeries, nominalKw) {
   const battery = rawSeries.map((raw, index) => {
     const hour = index * 24 / rawSeries.length;
-    const desired = daylight(hour) * 0.73;
-    return clamp(desired - raw, 0, 0.34);
+    const desired = daylight(hour) * nominalKw * 0.73;
+    return clamp(desired - raw, 0, apiConfig.maxDischargePowerKw);
   });
-  const corrected = rawSeries.map((raw, index) => clamp(raw + battery[index]));
+  const corrected = rawSeries.map((raw, index) => raw + battery[index]);
   return { battery, corrected };
 }
 
 export function createDemoScenario(labels) {
-  const histories = stations.map((_, index) => createStationHistory(index, labels));
-  const average = labels.map((_, pointIndex) => (
-    histories.reduce((sum, history) => sum + history[pointIndex], 0) / histories.length
+  const histories = stations.map((station, index) => (
+    createStationHistory(index, labels).map((value) => value * station.nominal)
   ));
+  const stationCorrections = histories.map((history, index) => (
+    buildBatteryCorrection(history, stations[index].nominal)
+  ));
+  const correctedHistories = stationCorrections.map(({ corrected }) => corrected);
+  const totalGeneration = labels.map((_, pointIndex) => (
+    histories.reduce((sum, history) => sum + history[pointIndex], 0)
+  ));
+  const corrected = labels.map((_, pointIndex) => (
+    correctedHistories.reduce((sum, history) => sum + history[pointIndex], 0)
+  ));
+  const battery = corrected.map((value, index) => value - totalGeneration[index]);
 
-  return { histories, average, correction: buildBatteryCorrection(average) };
+  return {
+    histories,
+    correctedHistories,
+    totalGeneration,
+    correction: { battery, corrected },
+  };
 }

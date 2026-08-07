@@ -5,7 +5,7 @@ import { findClosestLabelIndex, numberOr } from './core/utils.js';
 import { fetchSolarComparison } from './data/api.js';
 import { buildLabels, createDemoScenario } from './data/demoScenario.js';
 import { mapApiResponse } from './data/mapApiResponse.js';
-import { smoothSeries, thinSeries } from './data/series.js';
+import { thinSeries } from './data/series.js';
 import { stations, sumNominal } from './data/stations.js';
 import {
   createAverageChart,
@@ -46,12 +46,12 @@ export function startApp(root) {
   const demo = createDemoScenario(state.labels);
   state.cloud.index = findClosestLabelIndex(state.labels, apiConfig.cloudStartTime);
 
-  const miniCharts = createMiniCharts(state.labels, demo.histories);
-  const averageChart = createAverageChart(state.labels, demo.average, state.cloud.index);
+  const miniCharts = createMiniCharts(state.labels, demo.histories, demo.correctedHistories);
+  const averageChart = createAverageChart(state.labels, demo.totalGeneration, state.cloud.index);
   const correctedChart = createCorrectedChart(
     state.labels,
-    demo.average,
-    { battery: demo.correction.battery, corrected: smoothSeries(demo.correction.corrected) },
+    demo.totalGeneration,
+    { corrected: demo.correction.corrected },
     state.cloud.index,
   );
 
@@ -72,7 +72,7 @@ export function startApp(root) {
 
   function updateSummaryFromState() {
     const totalKw = state.currentGridRow
-      ? numberOr(state.currentGridRow.without_battery_total_output_kw
+      ? numberOr(state.currentGridRow.with_battery_total_output_kw
         ?? state.currentGridRow.solar_generation_kw)
       : stations.reduce((sum, station) => sum + station.value * station.nominal, 0);
     renderSummary({ totalKw, totalNominal: state.totalNominal });
@@ -90,13 +90,15 @@ export function startApp(root) {
       const thinned = thinSeries(scenario.histories[index], apiConfig.maxMiniChartPoints);
       chart.data.labels = thinned.indices.map((pointIndex) => state.labels[pointIndex]);
       chart.data.datasets[0].data = thinned.values;
+      chart.data.datasets[1].data = thinned.indices.map(
+        (pointIndex) => scenario.correctedHistories[index][pointIndex],
+      );
     });
     averageChart.data.labels = state.labels;
-    averageChart.data.datasets[0].data = scenario.average;
+    averageChart.data.datasets[0].data = scenario.totalGeneration;
     correctedChart.data.labels = state.labels;
-    correctedChart.data.datasets[0].data = scenario.average;
-    correctedChart.data.datasets[1].data = scenario.correction.battery;
-    correctedChart.data.datasets[2].data = smoothSeries(scenario.correction.corrected);
+    correctedChart.data.datasets[0].data = scenario.totalGeneration;
+    correctedChart.data.datasets[1].data = scenario.correction.corrected;
 
     [averageChart, correctedChart].forEach((chart) => {
       Object.assign(chart.options.plugins.cloudBand, {
@@ -130,7 +132,8 @@ export function startApp(root) {
     model.stationResults.forEach(({ station, chart }, index) => {
       if (chart) {
         miniCharts[index].data.labels = chart.labels;
-        miniCharts[index].data.datasets[0].data = chart.values;
+        miniCharts[index].data.datasets[0].data = chart.generation;
+        miniCharts[index].data.datasets[1].data = chart.corrected;
         miniCharts[index].update('none');
       }
       renderStation(station);
@@ -140,8 +143,7 @@ export function startApp(root) {
     averageChart.data.datasets[0].data = model.grid.generation;
     correctedChart.data.labels = model.grid.labels;
     correctedChart.data.datasets[0].data = model.grid.generation;
-    correctedChart.data.datasets[1].data = model.grid.battery;
-    correctedChart.data.datasets[2].data = model.grid.corrected;
+    correctedChart.data.datasets[1].data = model.grid.corrected;
 
     state.cloud = {
       enabled: model.cloud.enabled,
@@ -195,7 +197,10 @@ export function startApp(root) {
     }
   }
 
-  document.querySelector('#playbackButton')?.addEventListener('click', () => startPlayback(true));
+  document.querySelector('#playbackButton')?.addEventListener('click', async () => {
+    startPlayback(true);
+    await refreshApi();
+  });
   initCloudControls({
     onApply: async () => {
       applyDemoScenario();

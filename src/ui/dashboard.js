@@ -30,9 +30,8 @@ export function renderStation(station) {
 }
 
 export function renderSummary({ totalKw, totalNominal }) {
-  const average = totalKw / Math.max(1, totalNominal);
-  refs.averageOutput.innerHTML = `${formatFactor(average)} <small>/ 1,00</small>`;
-  refs.totalOutput.textContent = `${formatFactor(totalKw / 1000)} МВт суммарно`;
+  refs.averageOutput.innerHTML = `${formatNumber(totalKw)} <small>кВт</small>`;
+  refs.totalOutput.textContent = `установленная мощность: ${formatNumber(totalNominal)} кВт`;
 }
 
 export function setConnectionStatus(text, isError = false) {
@@ -83,9 +82,11 @@ export function setPlaybackButtonState(isPlaying) {
 
   button.classList.toggle('is-playing', isPlaying);
   button.setAttribute('aria-label', isPlaying
-    ? 'Перезапустить проигрывание суток'
-    : 'Проиграть сутки за одну минуту');
-  button.querySelector('.button-label').textContent = isPlaying ? 'ПЕРЕЗАПУСТИТЬ' : 'ПРОИГРАТЬ СУТКИ';
+    ? 'Перезагрузить график ещё раз'
+    : 'Перезагрузить график');
+  button.querySelector('.button-label').textContent = isPlaying
+    ? 'ПЕРЕЗАГРУЗИТЬ ЕЩЁ РАЗ'
+    : 'ПЕРЕЗАГРУЗИТЬ ГРАФИК';
 }
 
 export function startClock() {

@@ -200,6 +200,32 @@
   padding: 0 14px;
 }
 
+.mini-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  padding: 0 14px 5px;
+  color: #697265;
+  font: 7px 'Share Tech Mono', monospace;
+  letter-spacing: .06em;
+}
+
+.mini-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini-chart-legend i {
+  width: 10px;
+  height: 2px;
+  background: #ed1064;
+}
+
+.mini-chart-legend i.is-corrected {
+  background: #111111;
+}
+
 .station-card footer {
   display: flex;
   justify-content: space-between;

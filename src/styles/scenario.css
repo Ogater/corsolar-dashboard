@@ -78,12 +78,8 @@
   box-shadow: 0 7px 18px rgba(211, 19, 90, .18);
 }
 
-.play-icon {
-  width: 0;
-  height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 8px solid currentColor;
+.reload-icon {
+  font: 18px/1 'Share Tech Mono', monospace;
 }
 
 .playback-timeline {

@@ -1,28 +1,5 @@
 // Преобразования рядов данных: сглаживание и прореживание.
 
-import { clamp } from '../core/utils.js';
-
-// Взвешенное скользящее среднее: убирает «острые углы» у итоговой линии,
-// оставляя форму суточной кривой.
-export function smoothSeries(values) {
-  if (values.length < 5) return [...values];
-  const radius = Math.max(2, Math.min(6, Math.round(values.length / 72)));
-
-  return values.map((_, index) => {
-    let weightedSum = 0;
-    let totalWeight = 0;
-
-    for (let offset = -radius; offset <= radius; offset += 1) {
-      const sourceIndex = Math.max(0, Math.min(values.length - 1, index + offset));
-      const weight = radius + 1 - Math.abs(offset);
-      weightedSum += values[sourceIndex] * weight;
-      totalWeight += weight;
-    }
-
-    return clamp(weightedSum / totalWeight);
-  });
-}
-
 // Прореживание готового ряда значений (без исходных строк API).
 // Нужно спарклайнам: их высота 58px, плотная сетка там не читается,
 // но каждый кадр стоит времени отрисовки.
